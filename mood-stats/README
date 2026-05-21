@@ -1,0 +1,48 @@
+# MOOD — Player Stats Dashboard
+
+A full-stack player statistics dashboard for the video game Mood.
+Built to demonstrate full-stack development with a REST API,
+React frontend, data visualization, and Docker containerization.
+
+## Tech Stack
+
+| Layer       | Technology                        |
+|-------------|-----------------------------------|
+| Frontend    | React 18, Vite, Recharts          |
+| Backend     | Node.js, Express.js               |
+| Data        | JSON (swappable for PostgreSQL)   |
+| DevOps      | Docker, docker-compose            |
+
+## Running the App
+
+### Prerequisites
+- Docker Desktop installed and running
+
+### Start
+
+```bash
+docker-compose up --build
+```
+
+Then open http://localhost:3000
+
+## API Endpoints
+
+| Method | Endpoint            | Description                        |
+|--------|---------------------|------------------------------------|
+| GET    | /health             | Service health check               |
+| GET    | /api/players        | Returns all players                |
+| GET    | /api/players/:id    | Returns a single player by ID      |
+| GET    | /api/leaderboard    | Returns players sorted by K/D      |
+
+## Features
+
+- Leaderboard sorted by K/D ratio with color coding
+- Player profiles with kills, deaths, join date, last active
+- Bar chart visualization of kills vs deaths per player
+- Fully containerized — runs anywhere Docker is installed
+
+## Author
+
+Sayf Manasrah
+May 2026
