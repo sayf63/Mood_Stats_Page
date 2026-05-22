@@ -1,21 +1,46 @@
-
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: mood_db
+    environment:
+      POSTGRES_USER: mood
+      POSTGRES_PASSWORD: mood_pass
+      POSTGRES_DB: mood
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mood"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: ./backend
     ports:
       - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://mood:mood_pass@db:5432/mood
     volumes:
       - ./backend:/app
       - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./frontend
-    depends_on:
-      - backend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

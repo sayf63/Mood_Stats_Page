@@ -1,47 +1,66 @@
 import express from "express";
 import cors from "cors";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import pool from "./db/pool.js";
 
 const app = express();
-const port = 4000;
-
-// Read data from the project root inside the container (/app/data.json).
-const dataPath = resolve(process.cwd(), "data.json");
-const { players } = JSON.parse(readFileSync(dataPath, "utf-8"));
+const PORT = 4000;
 
 app.use(cors());
 app.use(express.json());
 
-app.get("/health", (req, res) => {
-  res.send("Server is healthy");
+// Health check
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "Mood Stats API" });
 });
 
-app.get("/api/players", (req, res) => {
-  res.json({ data: players });
-});
-
-app.get("/api/players/:id", (req, res) => {
-  const player = players.find((p) => p.id === Number(req.params.id));
-
-  if (!player) {
-    return res.status(404).json({ error: "Player not found" });
+// GET /api/players — all players
+app.get("/api/players", async (_req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM players ORDER BY id"
+    );
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch players" });
   }
-
-  return res.json({ data: player });
 });
 
-app.get("/api/leaderboard", (req, res) => {
-  const ranked = [...players]
-    .map((p) => ({
-      ...p,
-      kd: (p.kills / p.deaths).toFixed(2),
-    }))
-    .sort((a, b) => Number(b.kd) - Number(a.kd));
+// GET /api/players/:id — single player
+app.get("/api/players/:id", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM players WHERE id = $1",
+      [req.params.id]
+    );
 
-  res.json({ data: ranked });
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch player" });
+  }
 });
 
-app.listen(port, () => {
-  console.log(`Mood Stats API Server is running on http://localhost:${port}`);
+// GET /api/leaderboard — sorted by K/D ratio
+app.get("/api/leaderboard", async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT *,
+        ROUND(kills::numeric / NULLIF(deaths, 0), 2) AS kd
+      FROM players
+      ORDER BY kd DESC NULLS LAST
+    `);
+    res.json({ data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Mood Stats API running on http://localhost:${PORT}`);
 });
